@@ -1,0 +1,145 @@
+package back;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.Receiver;
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+
+import front.ServerGUI;
+
+public class ServerBack {
+
+	public static final int PORT = 9090;
+
+	public ServerSocket serverSocket;
+	public Socket socket;
+	public DataInputStream dis;
+	public DataOutputStream dos;
+
+	private ServerGUI sGui;
+	private String msg;
+	private Map<String, DataOutputStream> clientMap = new HashMap<String, DataOutputStream>();
+
+	public void setGui(ServerGUI gui) {
+		this.sGui = gui;
+	}
+
+	// 사용자 접속을 기다리는 스레드
+	public void ServerSetting() {
+		/*
+		 * 서버 역할 : 방문자를 계속 받아 , 쓰레드 리시버를 계속 생성
+		 */
+		// while (true) {
+		try {
+			serverSocket = new ServerSocket(PORT);
+			System.out.println("접속 대기 중......");
+			sGui.txtHistory.append("Server Stared....\r\n");
+
+			//socket = serverSocket.accept()
+			// 새로운 사용자 스레드 클래스를 생성하여 소켓 정보 입력
+			Receiver receiver = new Receiver(socket);
+			receiver.start();
+			
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(sGui, "서버 구동 실패");
+		}
+	}// serversetting
+
+	class Receiver extends Thread {
+		private String nick;
+		// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
+		public Receiver(Socket socket) {
+			
+		}// Recevier 생성자
+		
+		@Override
+		public void run() {
+			if (serverSocket != null) {
+				while (true) {
+					try {
+						// 클라이언트 연결 성공시 아래코드가 진행됨]
+						socket = serverSocket.accept();
+						sGui.txtHistory.append(socket.getInetAddress().getHostAddress() + "가 접속중\r\n");
+						dis = new DataInputStream(socket.getInputStream());
+						dos = new DataOutputStream(socket.getOutputStream());
+						// 스레드 스타트]
+						new ReadSocket().start();
+						sGui.txtHistory.append("리드소켓 생성 \r\n");
+					} catch (Exception e) {
+						System.out.println("클라이언트 연결 실패");
+					}
+				}
+			}
+		}//////////// run
+	}////////// Receiver
+
+	class ReadSocket extends Thread {
+		@Override
+		public void run() {
+			if (socket != null) {
+				while (true) {
+					try {
+						sGui.txtHistory.append("Client>" + dis.readUTF() + "\r\n");
+
+					} catch (IOException e) {
+						sGui.txtHistory.append("클라이언트가 연결을 끊었어요\r\n");
+						break;
+					} finally {
+						autoScroll(sGui.txtHistory);
+					}
+				}
+			}
+
+		}////////// run()
+	}/////////// ReadSocket
+	
+	public ActionListener listener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (socket != null) {
+				try {
+					// 연결된 소켓에 데이타 쓰기]
+					dos.writeUTF(sGui.txtMessage.getText());
+					// 확인용-텍스트에리어에 다시 출력]
+					sGui.txtHistory.append("Server>" + sGui.txtMessage.getText() + "\r\n");
+
+				} catch (IOException e1) {
+					// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
+					// 즉 클라이언트가 나가면 예외발생.
+					sGui.txtHistory.append("연결이 끊어졌어요\r\n");
+				} finally {
+					autoScroll(sGui.txtHistory);
+					// 텍스트 클리어
+					sGui.txtMessage.setText("");
+					// 포커스를 다시 메시지 입력창으로 가져오기
+					sGui.txtMessage.requestFocus();
+				}
+			}//if
+		}//actionPerformed
+	};
+
+	public static void autoScroll(JTextArea textArea) {
+		// 텍스트에리어의 모든 텍스트 길이 얻기
+		int length = textArea.getText().length();
+		// 텍스트 끝에 캐롯 추가
+		textArea.setCaretPosition(length);
+		// 텍스트에리어에 포커스 주기
+		textArea.requestFocus();
+	}/////////// autoScroll
+
+	public static void main(String[] args) {
+		ServerBack serverEnd = new ServerBack();
+		serverEnd.ServerSetting();
+	}// main
+
+}// class
