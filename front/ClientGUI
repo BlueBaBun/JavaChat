@@ -1,0 +1,111 @@
+package front;
+
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.border.TitledBorder;
+
+import back.ClientBack;
+import service.JMyPanel;
+import service.LayoutService;
+
+public class ClientGUI extends JFrame implements LayoutService {
+
+	// UI용 컴포넌트]
+	public JTextField txtMessage, txtAddress;
+	public JTextArea txtHistory;
+	public JButton btnConnect;
+	
+	ClientBack cBack = new ClientBack();
+
+	public ClientGUI() {
+		super("채팅 클라이언트");
+		createComponent();
+		addComponent();
+		addListener();
+		setSize(600, 500);
+		setVisible(true);
+
+		cBack.setGui(this);
+	}
+
+	@Override
+	public void createComponent() {
+		txtHistory = new JTextArea();
+		txtMessage = new JTextField();
+		txtHistory.setEditable(false);
+		txtAddress = new JTextField("127.0.0.1", 30);
+		btnConnect = new JButton("서버연결");
+
+	}// create
+
+	@Override
+	public void addComponent() {
+		// 북쪽]
+		JPanel pnlNorth = new JMyPanel(new FlowLayout(FlowLayout.LEFT));
+		pnlNorth.add(txtAddress);
+		pnlNorth.add(btnConnect);
+		// 가운데]
+		JPanel pnlCenter = new JMyPanel(new BorderLayout()) {
+			@Override
+			public Insets getInsets() {
+				return new Insets(20, 10, 10, 10);
+			}
+		};
+		pnlCenter.setBorder(new TitledBorder("메시지 목록창"));
+		pnlCenter.add(new JScrollPane(txtHistory));
+		// 남쪽]
+		JPanel pnlSouth = new JMyPanel(new BorderLayout()) {
+			@Override
+			public Insets getInsets() {
+				return new Insets(20, 10, 10, 10);
+			}
+		};
+		pnlSouth.setBorder(new TitledBorder("메시지 입력창"));
+		pnlSouth.add(txtMessage);
+		// 프레임에 패널 부착]
+		add(pnlCenter);
+		add("South", pnlSouth);
+		add("North", pnlNorth);
+	}
+
+	@Override
+	public void addListener() {
+		addWindowListener(new WindowAdapter() {
+			// 윈도우 종료]
+			@Override
+			public void windowClosing(WindowEvent e) {
+				System.exit(0);
+			}
+		});
+		// 텍스트필드 와 버튼에 액션 리스너부착
+		txtMessage.addActionListener(cBack.listener);
+		btnConnect.addActionListener(cBack.listener);
+	}// addListener
+	
+	@Override
+	public Insets getInsets() {		
+		return new Insets(40, 20, 20, 20);
+	}
+	public static void main(String[] args) {
+		new ClientGUI();
+
+	}
+
+}
