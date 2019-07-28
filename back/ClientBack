@@ -1,0 +1,109 @@
+package back;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+
+import front.ClientGUI;
+
+public class ClientBack {
+
+	private Socket socket;
+	private DataInputStream dis;
+	private DataOutputStream dos;
+
+	private ClientGUI cGui;
+	private String msg;
+	private String nickName;
+
+	public void setGui(ClientGUI gui) {
+		this.cGui = gui;
+
+	}
+	
+	public ActionListener listener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			Object source = e.getSource();
+			if (source == cGui.btnConnect) {// 서버 연결
+				try {
+					socket = new Socket(cGui.txtAddress.getText().trim(), 9090);
+					cGui.txtHistory.append("서버와 연결되었어요...\r\n");
+					// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
+					dis = new DataInputStream(socket.getInputStream());
+					// 연결된 소켓에 데이타를 쓰기위한 출력 스트림 생성]
+					dos = new DataOutputStream(socket.getOutputStream());
+					// 연결된 소켓에서 서버가 전송한 데이타 읽는 스레드 스타트
+					new ReadSocket().start();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					JOptionPane.showMessageDialog(cGui, "서버 연결 실패");
+				}
+			} ////// if
+			else {// 메시지 입력
+				if (socket != null) {
+					try {
+						// 연결된 소켓에 데이타 쓰기]
+						dos.writeUTF(cGui.txtMessage.getText());
+						// 확인용-텍스트에리어에 다시 출력]
+						cGui.txtHistory.append("Client>" + cGui.txtMessage.getText() + "\r\n");
+					} catch (IOException e1) {
+						// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
+						// 즉 클라이언트가 나가면 예외발생.
+						cGui.txtHistory.append("연결이 끊어졌어요\r\n");
+					} finally {
+						autoScroll(cGui.txtHistory);
+						// 텍스트 클리어
+						cGui.txtMessage.setText("");
+						// 포커스를 다시 메시지 입력창으로 가져오기
+						cGui.txtMessage.requestFocus();
+					}
+					// 확인용-텍스트에리어에 다시 출력]
+				} ///////
+			}
+		}//////// actionPerformed
+	};///////////// ActionListener
+
+	class ReadSocket extends Thread {
+		@Override
+		public void run() {
+			read();
+		}///////// run
+
+		private void read() {
+			if (socket != null) {
+				while (true) {
+					try {
+						cGui.txtHistory.append("Server>" + dis.readUTF() + "\r\n");
+					} catch (IOException e) {
+						cGui.txtHistory.append("서버가 중지되었어요");
+						break;
+					} finally {
+						autoScroll(cGui.txtHistory);
+					}
+				}
+			}
+		}////////// read()
+	}/////////// ReadSocket
+
+	public static void autoScroll(JTextArea textArea) {
+		// 텍스트에리어의 모든 텍스트 길이 얻기
+		int length = textArea.getText().length();
+		// 텍스트 끝에 캐롯 추가
+		textArea.setCaretPosition(length);
+		// 텍스트에리어에 포커스 주기
+		textArea.requestFocus();
+	}/////////// autoScroll
+
+	public static void main(String[] args) {
+		ClientBack clientBack = new ClientBack();
+
+	}
+
+}
