@@ -47,8 +47,7 @@ public class ServerGUI extends JFrame implements LayoutService {
 		txtHistory = new JTextArea();
 		txtMessage = new JTextField();
 		txtHistory.setEditable(false);
-		
-		
+
 	}// createComponent
 
 	@Override
@@ -83,17 +82,20 @@ public class ServerGUI extends JFrame implements LayoutService {
 			public void windowClosing(WindowEvent e) {
 				System.exit(0);
 			}
-
 			// 프로그램 처음 실행시 메시지 입력 텍스트 필드에 포커스 주기
 			@Override
 			public void windowOpened(WindowEvent e) {
 				txtMessage.requestFocus();
 			}
-
 		});
 		// 텍스트필드에 액션 리스너부착
 		txtMessage.addActionListener(sBack.listener);
-	}//actionLisntener
+	}// actionLisntener
+	
+	public void appendMsg(String msg) {
+		txtHistory.append(msg);
+	}
+
 	
 	public static void main(String[] args) {
 		new ServerGUI();
