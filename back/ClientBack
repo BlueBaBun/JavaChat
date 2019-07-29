@@ -24,22 +24,35 @@ public class ClientBack {
 
 	public void setGui(ClientGUI gui) {
 		this.cGui = gui;
+	}// setGui
 
+	public void setNickname(String nickName) {
+		this.nickName = nickName;
 	}
-	
+	public void connect() {
+		try {
+			socket = new Socket(cGui.txtAddress.getText().trim(), 9090);
+			System.out.println("서버에 연결 성공");
+			cGui.txtHistory.append("서버와 연결되었어요...\r\n");
+			// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
+			dis = new DataInputStream(socket.getInputStream());
+			// 연결된 소켓에 데이타를 쓰기위한 출력 스트림 생성]
+			dos = new DataOutputStream(socket.getOutputStream());
+			// 접속 순간 닉네임 전송 시, 서버가 닉네임으로 인식
+			dos.writeUTF(nickName);
+			System.out.println("클라이언트 : 닉네임 전송 완료");
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(cGui, "서버 접속 실패");
+		}
+	}// connect
+
 	public ActionListener listener = new ActionListener() {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			Object source = e.getSource();
-			if (source == cGui.btnConnect) {// 서버 연결
+			if (source == cGui.btnConnect) {
 				try {
-					socket = new Socket(cGui.txtAddress.getText().trim(), 9090);
-					cGui.txtHistory.append("서버와 연결되었어요...\r\n");
-					// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
-					dis = new DataInputStream(socket.getInputStream());
-					// 연결된 소켓에 데이타를 쓰기위한 출력 스트림 생성]
-					dos = new DataOutputStream(socket.getOutputStream());
-					// 연결된 소켓에서 서버가 전송한 데이타 읽는 스레드 스타트
 					new ReadSocket().start();
 				} catch (Exception e1) {
 					e1.printStackTrace();
@@ -101,9 +114,10 @@ public class ClientBack {
 		textArea.requestFocus();
 	}/////////// autoScroll
 
+	
 	public static void main(String[] args) {
 		ClientBack clientBack = new ClientBack();
-
+		clientBack.connect();
 	}
 
 }
