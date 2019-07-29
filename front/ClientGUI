@@ -11,6 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Scanner;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -33,7 +34,8 @@ public class ClientGUI extends JFrame implements LayoutService {
 	public JButton btnConnect;
 	
 	ClientBack cBack = new ClientBack();
-
+	private static String nickName;
+	
 	public ClientGUI() {
 		super("채팅 클라이언트");
 		createComponent();
@@ -43,6 +45,7 @@ public class ClientGUI extends JFrame implements LayoutService {
 		setVisible(true);
 
 		cBack.setGui(this);
+		cBack.setNickname(nickName);
 	}
 
 	@Override
@@ -104,8 +107,13 @@ public class ClientGUI extends JFrame implements LayoutService {
 		return new Insets(40, 20, 20, 20);
 	}
 	public static void main(String[] args) {
+		Scanner sc= new Scanner(System.in);
+		System.out.println("닉네임  설정");
+		nickName = sc.nextLine();
+		System.out.println("닉네임 설정 완료");
+		System.out.println("sc close 실행완료");
 		new ClientGUI();
 
-	}
+	}//main
 
 }
