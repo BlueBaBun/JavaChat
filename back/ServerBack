@@ -5,8 +5,11 @@ import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,16 +22,17 @@ import front.ServerGUI;
 
 public class ServerBack {
 
-	public static final int PORT = 9090;
+	public static final int PORT = 9091;
 
-	public ServerSocket serverSocket;
+	public ServerSocket serverSocket = null;;
 	public Socket socket;
 	public DataInputStream dis;
 	public DataOutputStream dos;
 
 	private ServerGUI sGui;
 	private String msg;
-	//사용자들의 정보를 저장하는 맵
+	private String nick = null;
+	// 사용자들의 정보를 저장하는 맵
 	private Map<String, DataOutputStream> clientMap = new HashMap<String, DataOutputStream>();
 
 	public void setGui(ServerGUI gui) {
@@ -44,14 +48,20 @@ public class ServerBack {
 		try {
 			Collections.synchronizedMap(clientMap);// clientMap 을 네트워크 처리
 			serverSocket = new ServerSocket(PORT);
-			System.out.println("접속 대기 중......");
-			sGui.txtHistory.append("Server Stared....\r\n");
+			//String ServerAddress = InetAddress.getLocalHost().getHostAddress();
+			//serverSocket.bind(new InetSocketAddress(ServerAddress, PORT));
+			//System.out.println("접속 대기 중......\n " + ServerAddress + " : " + PORT);
+			sGui.txtHistory.append("Server preparing....\r\n");
 
+			// while (true) {
+			sGui.txtHistory.append("Client Waiting ....\r\n");
 			socket = serverSocket.accept();
+			sGui.txtHistory.append("Client Connect ! \r\n");
+
 			// 새로운 사용자 스레드 클래스를 생성하여 소켓 정보 입력
 			Receiver receiver = new Receiver(socket);
 			receiver.start();
-
+			// }
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(sGui, "서버 구동 실패");
 		}
@@ -63,7 +73,7 @@ public class ServerBack {
 		sendMessage(message);
 		sGui.appendMsg(message);
 		clientMap.put(nick, dos);
-	}//addClient
+	}// addClient
 
 	// 클라이언트 삭제
 	public void removeClient(String nick) {
@@ -71,7 +81,7 @@ public class ServerBack {
 		sendMessage(message);
 		sGui.appendMsg(message);
 		clientMap.remove(nick);
-	}//removeClient
+	}// removeClient
 
 	// 메세지 내용 전파
 	public void sendMessage(String msg) {
@@ -86,10 +96,9 @@ public class ServerBack {
 				e.printStackTrace();
 			}
 		}
-	}//sendMessage
+	}// sendMessage
 
 	class Receiver extends Thread {
-		private String nick;
 
 		// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
 		public Receiver(Socket socket) {
@@ -105,11 +114,11 @@ public class ServerBack {
 
 		@Override
 		public void run() {
-			if (serverSocket != null) {
+			if (dis != null) {
 				while (true) {
 					try {
 						// 클라이언트 연결 성공시 아래코드가 진행됨]
-						//socket = serverSocket.accept();
+						// socket = serverSocket.accept();
 						sGui.txtHistory.append(socket.getInetAddress().getHostAddress() + "가 접속중\r\n");
 						// 스레드 스타트]
 						new ReadSocket().start();
@@ -117,12 +126,12 @@ public class ServerBack {
 					} catch (Exception e) {
 						System.out.println("클라이언트 연결 실패");
 					}
-				}
+				}//
 			}
 		}//////////// run
 	}////////// Receiver
+		// 클라이언트에서 오는 메세지를 받는 소켓 쓰레드
 
-	//클라이언트에서 오는 메세지를 받는 소켓 쓰레드
 	class ReadSocket extends Thread {
 		@Override
 		public void run() {
@@ -130,16 +139,17 @@ public class ServerBack {
 				while (true) {
 					try {
 						sGui.txtHistory.append("Client>" + dis.readUTF() + "\r\n");
-
+						msg = dis.readUTF();
+						sendMessage(msg);
+						sGui.appendMsg(msg);
 					} catch (IOException e) {
-						sGui.txtHistory.append("클라이언트가 연결을 끊었어요\r\n");
+						removeClient(nick);
 						break;
 					} finally {
 						autoScroll(sGui.txtHistory);
 					}
 				}
 			}
-
 		}////////// run()
 	}/////////// ReadSocket
 
@@ -147,12 +157,15 @@ public class ServerBack {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			String msg = "서버 공지사항 : " + sGui.txtMessage.getText() + "\n";
+			
 			if (socket != null) {
 				try {
 					// 연결된 소켓에 데이타 쓰기]
 					dos.writeUTF(sGui.txtMessage.getText());
 					// 확인용-텍스트에리어에 다시 출력]
 					sGui.txtHistory.append("Server>" + sGui.txtMessage.getText() + "\r\n");
+					sendMessage(msg);
+					sGui.appendMsg(msg);
 				} catch (IOException e1) {
 					// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
 					// 즉 클라이언트가 나가면 예외발생.
@@ -163,7 +176,7 @@ public class ServerBack {
 					sGui.txtMessage.setText("");
 					// 포커스를 다시 메시지 입력창으로 가져오기
 					sGui.txtMessage.requestFocus();
-					
+
 				}
 			} // if
 		}// actionPerformed
