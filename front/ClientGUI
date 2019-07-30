@@ -46,6 +46,7 @@ public class ClientGUI extends JFrame implements LayoutService {
 
 		cBack.setGui(this);
 		cBack.setNickname(nickName);
+		cBack.connect();
 	}
 
 	@Override
@@ -101,6 +102,10 @@ public class ClientGUI extends JFrame implements LayoutService {
 		txtMessage.addActionListener(cBack.listener);
 		btnConnect.addActionListener(cBack.listener);
 	}// addListener
+	
+	public void appendMsg(String msg) {
+		txtHistory.append(msg);
+	}
 	
 	@Override
 	public Insets getInsets() {		
