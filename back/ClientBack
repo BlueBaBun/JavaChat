@@ -31,7 +31,7 @@ public class ClientBack {
 	}
 	public void connect() {
 		try {
-			socket = new Socket(cGui.txtAddress.getText().trim(), 9090);
+			socket = new Socket(cGui.txtAddress.getText().trim(),9091);
 			System.out.println("서버에 연결 성공");
 			cGui.txtHistory.append("서버와 연결되었어요...\r\n");
 			// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
@@ -41,6 +41,11 @@ public class ClientBack {
 			// 접속 순간 닉네임 전송 시, 서버가 닉네임으로 인식
 			dos.writeUTF(nickName);
 			System.out.println("클라이언트 : 닉네임 전송 완료");
+		
+			//while(dis!=null) {
+				msg = dis.readUTF();
+				cGui.appendMsg(msg);
+			//}
 		} catch (IOException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(cGui, "서버 접속 실패");
@@ -114,7 +119,13 @@ public class ClientBack {
 		textArea.requestFocus();
 	}/////////// autoScroll
 
-	
+	public void sendMessage(String msg) {
+		try {
+			dos.writeUTF(msg);
+		}catch(IOException e) {
+			e.printStackTrace();
+		}
+	}
 	public static void main(String[] args) {
 		ClientBack clientBack = new ClientBack();
 		clientBack.connect();
