@@ -48,18 +48,18 @@ public class ServerBack {
 		try {
 			Collections.synchronizedMap(clientMap);// clientMap 을 네트워크 처리
 			serverSocket = new ServerSocket(PORT);
-			//String ServerAddress = InetAddress.getLocalHost().getHostAddress();
-			//serverSocket.bind(new InetSocketAddress(ServerAddress, PORT));
-			//System.out.println("접속 대기 중......\n " + ServerAddress + " : " + PORT);
+			// String ServerAddress = InetAddress.getLocalHost().getHostAddress();
+			// serverSocket.bind(new InetSocketAddress(ServerAddress, PORT));
+			// System.out.println("접속 대기 중......\n " + ServerAddress + " : " + PORT);
 			sGui.txtHistory.append("Server preparing....\r\n");
 
 			// while (true) {
 			sGui.txtHistory.append("Client Waiting ....\r\n");
-			socket = serverSocket.accept();
+			// socket = serverSocket.accept();
 			sGui.txtHistory.append("Client Connect ! \r\n");
 
 			// 새로운 사용자 스레드 클래스를 생성하여 소켓 정보 입력
-			Receiver receiver = new Receiver(socket);
+			Receiver receiver = new Receiver();
 			receiver.start();
 			// }
 		} catch (Exception e) {
@@ -92,6 +92,7 @@ public class ServerBack {
 			key = iterator.next();// 반복자에서 하나하나 키를 빼온다.
 			try {
 				clientMap.get(key).writeUTF(msg);
+				
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -101,24 +102,18 @@ public class ServerBack {
 	class Receiver extends Thread {
 
 		// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
-		public Receiver(Socket socket) {
-			try {
-				dis = new DataInputStream(socket.getInputStream());
-				dos = new DataOutputStream(socket.getOutputStream());
-				nick = dis.readUTF();
-				addClient(nick, dos);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}// Recevier 생성자
 
 		@Override
 		public void run() {
-			if (dis != null) {
+			if (serverSocket != null) {
 				while (true) {
 					try {
 						// 클라이언트 연결 성공시 아래코드가 진행됨]
-						// socket = serverSocket.accept();
+						socket = serverSocket.accept();
+						dis = new DataInputStream(socket.getInputStream());
+						dos = new DataOutputStream(socket.getOutputStream());
+						nick = dis.readUTF();
+						addClient(nick, dos);
 						sGui.txtHistory.append(socket.getInetAddress().getHostAddress() + "가 접속중\r\n");
 						// 스레드 스타트]
 						new ReadSocket().start();
@@ -126,7 +121,7 @@ public class ServerBack {
 					} catch (Exception e) {
 						System.out.println("클라이언트 연결 실패");
 					}
-				}//
+				} //
 			}
 		}//////////// run
 	}////////// Receiver
@@ -138,10 +133,11 @@ public class ServerBack {
 			if (socket != null) {
 				while (true) {
 					try {
-						sGui.txtHistory.append("Client>" + dis.readUTF() + "\r\n");
+						// sGui.txtHistory.append("Client>" + dis.readUTF() + "\r\n");
 						msg = dis.readUTF();
 						sendMessage(msg);
 						sGui.appendMsg(msg);
+						
 					} catch (IOException e) {
 						removeClient(nick);
 						break;
@@ -157,16 +153,14 @@ public class ServerBack {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			String msg = "서버 공지사항 : " + sGui.txtMessage.getText() + "\n";
-			
 			if (socket != null) {
 				try {
 					// 연결된 소켓에 데이타 쓰기]
-					dos.writeUTF(sGui.txtMessage.getText());
+					//dos.writeUTF(sGui.txtMessage.getText());
 					// 확인용-텍스트에리어에 다시 출력]
-					sGui.txtHistory.append("Server>" + sGui.txtMessage.getText() + "\r\n");
 					sendMessage(msg);
 					sGui.appendMsg(msg);
-				} catch (IOException e1) {
+				} catch (Exception e1) {
 					// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
 					// 즉 클라이언트가 나가면 예외발생.
 					sGui.txtHistory.append("연결이 끊어졌어요\r\n");
