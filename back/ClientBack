@@ -40,12 +40,16 @@ public class ClientBack {
 			dos = new DataOutputStream(socket.getOutputStream());
 			// 접속 순간 닉네임 전송 시, 서버가 닉네임으로 인식
 			dos.writeUTF(nickName);
+			//dos.writeUTF(nickName);
 			System.out.println("클라이언트 : 닉네임 전송 완료");
 		
-			//while(dis!=null) {
+			/*while(dis!=null) {
 				msg = dis.readUTF();
+				cGui.txtHistory.append("Sever>");
 				cGui.appendMsg(msg);
-			//}
+				cGui.txtHistory.append("\r\n");
+			}*/
+				new ReadSocket().start();
 		} catch (IOException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(cGui, "서버 접속 실패");
@@ -56,22 +60,29 @@ public class ClientBack {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			Object source = e.getSource();
-			if (source == cGui.btnConnect) {
+			/*if (source == cGui.btnConnect) {
 				try {
+
 					new ReadSocket().start();
 				} catch (Exception e1) {
 					e1.printStackTrace();
 					JOptionPane.showMessageDialog(cGui, "서버 연결 실패");
-				}
-			} ////// if
-			else {// 메시지 입력
+				}*/
+			//} ////// if
+			//else {// 메시지 입력
 				if (socket != null) {
 					try {
+						//new ReadSocket().start();
 						// 연결된 소켓에 데이타 쓰기]
-						dos.writeUTF(cGui.txtMessage.getText());
+						//cGui.txtHistory.append("Client>");
+						//dos.writeUTF(cGui.txtMessage.getText());
+						//cGui.txtHistory.append("\r\n");
+						String msg = nickName + ":" + cGui.txtMessage.getText() + "\n";
+						sendMessage(msg);
+	
 						// 확인용-텍스트에리어에 다시 출력]
-						cGui.txtHistory.append("Client>" + cGui.txtMessage.getText() + "\r\n");
-					} catch (IOException e1) {
+						//cGui.txtHistory.append("Client>" + cGui.txtMessage.getText() + "\r\n");
+					} catch (Exception e1) {
 						// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
 						// 즉 클라이언트가 나가면 예외발생.
 						cGui.txtHistory.append("연결이 끊어졌어요\r\n");
@@ -83,7 +94,7 @@ public class ClientBack {
 						cGui.txtMessage.requestFocus();
 					}
 					// 확인용-텍스트에리어에 다시 출력]
-				} ///////
+				//} ///////
 			}
 		}//////// actionPerformed
 	};///////////// ActionListener
@@ -91,25 +102,27 @@ public class ClientBack {
 	class ReadSocket extends Thread {
 		@Override
 		public void run() {
-			read();
-		}///////// run
-
-		private void read() {
 			if (socket != null) {
 				while (true) {
 					try {
-						cGui.txtHistory.append("Server>" + dis.readUTF() + "\r\n");
+						//cGui.txtHistory.append("Server>" + dis.readUTF() + "\r\n");
+						msg = dis.readUTF();
+						//cGui.txtHistory.append("Client>");
+						cGui.appendMsg(msg);
+						//cGui.txtHistory.append("\r\n");
 					} catch (IOException e) {
 						cGui.txtHistory.append("서버가 중지되었어요");
 						break;
 					} finally {
 						autoScroll(cGui.txtHistory);
+						cGui.txtMessage.setText("");
+						// 포커스를 다시 메시지 입력창으로 가져오기
+						cGui.txtMessage.requestFocus();
 					}
 				}
 			}
 		}////////// read()
 	}/////////// ReadSocket
-
 	public static void autoScroll(JTextArea textArea) {
 		// 텍스트에리어의 모든 텍스트 길이 얻기
 		int length = textArea.getText().length();
