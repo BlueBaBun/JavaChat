@@ -29,7 +29,7 @@ import service.LayoutService;
 public class ClientGUI extends JFrame implements LayoutService {
 
 	// UI용 컴포넌트]
-	public JTextField txtMessage, txtAddress;
+	public JTextField txtMessage, txtAddress, txtNickname;
 	public JTextArea txtHistory;
 	public JButton btnConnect;
 	
@@ -43,7 +43,8 @@ public class ClientGUI extends JFrame implements LayoutService {
 		addListener();
 		setSize(600, 500);
 		setVisible(true);
-
+		txtNickname.setEditable(false);
+		
 		cBack.setGui(this);
 		cBack.setNickname(nickName);
 		cBack.connect();
@@ -55,6 +56,7 @@ public class ClientGUI extends JFrame implements LayoutService {
 		txtMessage = new JTextField();
 		txtHistory.setEditable(false);
 		txtAddress = new JTextField("127.0.0.1", 30);
+		txtNickname = new JTextField(nickName,10);
 		btnConnect = new JButton("서버연결");
 
 	}// create
@@ -63,6 +65,7 @@ public class ClientGUI extends JFrame implements LayoutService {
 	public void addComponent() {
 		// 북쪽]
 		JPanel pnlNorth = new JMyPanel(new FlowLayout(FlowLayout.LEFT));
+		pnlNorth.add(txtNickname);
 		pnlNorth.add(txtAddress);
 		pnlNorth.add(btnConnect);
 		// 가운데]
@@ -113,8 +116,7 @@ public class ClientGUI extends JFrame implements LayoutService {
 	}
 	public static void main(String[] args) {
 		Scanner sc= new Scanner(System.in);
-		System.out.println("닉네임  설정");
-		nickName = sc.nextLine();
+		nickName = JOptionPane.showInputDialog("닉네임을 입력하세요");
 		System.out.println("닉네임 설정 완료");
 		System.out.println("sc close 실행완료");
 		new ClientGUI();
