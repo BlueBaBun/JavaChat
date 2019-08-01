@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
@@ -26,12 +27,16 @@ public class ServerBack {
 
 	public ServerSocket serverSocket = null;;
 	public Socket socket;
-	public DataInputStream dis;
-	public DataOutputStream dos;
 
 	private ServerGUI sGui;
 	private String msg;
+	private String whisper;
 	private String nick = null;
+	private String receiver;
+	
+	private int begin, end;
+	private Set<String> key1;
+	private String recenick;
 	// 사용자들의 정보를 저장하는 맵
 	private Map<String, DataOutputStream> clientMap = new HashMap<String, DataOutputStream>();
 
@@ -44,28 +49,99 @@ public class ServerBack {
 		/*
 		 * 서버 역할 : 방문자를 계속 받아 , 쓰레드 리시버를 계속 생성
 		 */
-		// while (true) {
 		try {
 			Collections.synchronizedMap(clientMap);// clientMap 을 네트워크 처리
 			serverSocket = new ServerSocket(PORT);
-			// String ServerAddress = InetAddress.getLocalHost().getHostAddress();
-			// serverSocket.bind(new InetSocketAddress(ServerAddress, PORT));
-			// System.out.println("접속 대기 중......\n " + ServerAddress + " : " + PORT);
 			sGui.txtHistory.append("Server preparing....\r\n");
-
-			// while (true) {
 			sGui.txtHistory.append("Client Waiting ....\r\n");
-			// socket = serverSocket.accept();
-			sGui.txtHistory.append("Client Connect ! \r\n");
-
-			// 새로운 사용자 스레드 클래스를 생성하여 소켓 정보 입력
-			Receiver receiver = new Receiver();
-			receiver.start();
-			// }
+			while (true) {
+				socket = serverSocket.accept();
+				// 새로운 사용자 스레드 클래스를 생성하여 소켓 정보 입력
+				Receiver receiver = new Receiver(socket);
+				receiver.start();
+			}
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(sGui, "서버 구동 실패");
 		}
 	}// serversetting
+
+	class Receiver extends Thread {
+
+		private DataInputStream dis;
+		private DataOutputStream dos;
+		private String nick;
+		private int begin, end;
+		private Set<String> key1;
+		private String recenick;
+		
+		public Receiver(Socket socket) {
+			try {
+				dos = new DataOutputStream(socket.getOutputStream());
+				dis = new DataInputStream(socket.getInputStream());
+				nick = dis.readUTF();
+				addClient(nick, dos);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}// 생성
+
+		@Override
+		public void run() {
+			try {
+				while (dis != null) {
+					sGui.txtHistory.append("Receiver run에서 받음 \r\n");
+					msg = dis.readUTF();
+					if (msg.contains("/w")) {
+						whisper = msg;
+						sGui.appendMsg(msg);
+						begin = whisper.indexOf(" ")+1;
+						end = whisper.indexOf(" ",begin);
+						receiver = whisper.substring(begin, end).trim();
+						whisper = whisper.substring(end+1).trim();
+						System.out.println("begin : "+begin);
+						System.out.println("end : "+end);
+						System.out.println("receiver : "+receiver);
+						System.out.println("whisper : "+whisper);
+						key1 = clientMap.keySet();
+						unicast(whisper);
+						
+					}//if 
+					else{
+						sendMessage(msg);
+						sGui.appendMsg(msg);
+					}//else
+				}//while
+			} catch (Exception e) {
+				removeClient(nick);
+			} finally {
+				autoScroll(sGui.txtHistory);
+			}
+		}
+	}//////////// run
+
+	public ActionListener listener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			String msg = "서버 공지사항 : " + sGui.txtMessage.getText() + "\n";
+			try {
+				
+				sendMessage(msg);
+				sGui.appendMsg(msg);
+			} catch (Exception e1) {
+				// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
+				// 즉 클라이언트가 나가면 예외발생.
+				sGui.txtHistory.append("연결이 끊어졌어요\r\n");
+			} finally {
+				autoScroll(sGui.txtHistory);
+				// 텍스트 클리어
+				sGui.txtMessage.setText("");
+				// 포커스를 다시 메시지 입력창으로 가져오기
+				sGui.txtMessage.requestFocus();
+			}
+			// if
+		}// actionPerformed
+	};
 
 	// 클라이언트 저장
 	public void addClient(String nick, DataOutputStream dos) {
@@ -92,89 +168,12 @@ public class ServerBack {
 			key = iterator.next();// 반복자에서 하나하나 키를 빼온다.
 			try {
 				clientMap.get(key).writeUTF(msg);
-				
+
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}// sendMessage
-
-	class Receiver extends Thread {
-
-		// 연결된 소켓에서 데이타를 읽어 오기위한 입력 스트림 생성]
-
-		@Override
-		public void run() {
-			if (serverSocket != null) {
-				while (true) {
-					try {
-						// 클라이언트 연결 성공시 아래코드가 진행됨]
-						socket = serverSocket.accept();
-						dis = new DataInputStream(socket.getInputStream());
-						dos = new DataOutputStream(socket.getOutputStream());
-						nick = dis.readUTF();
-						addClient(nick, dos);
-						sGui.txtHistory.append(socket.getInetAddress().getHostAddress() + "가 접속중\r\n");
-						// 스레드 스타트]
-						new ReadSocket().start();
-						sGui.txtHistory.append("리드소켓 생성 \r\n");
-					} catch (Exception e) {
-						System.out.println("클라이언트 연결 실패");
-					}
-				} //
-			}
-		}//////////// run
-	}////////// Receiver
-		// 클라이언트에서 오는 메세지를 받는 소켓 쓰레드
-
-	class ReadSocket extends Thread {
-		@Override
-		public void run() {
-			if (socket != null) {
-				while (true) {
-					try {
-						// sGui.txtHistory.append("Client>" + dis.readUTF() + "\r\n");
-						msg = dis.readUTF();
-						sendMessage(msg);
-						sGui.appendMsg(msg);
-						
-					} catch (IOException e) {
-						removeClient(nick);
-						break;
-					} finally {
-						autoScroll(sGui.txtHistory);
-					}
-				}
-			}
-		}////////// run()
-	}/////////// ReadSocket
-
-	public ActionListener listener = new ActionListener() {
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			String msg = "서버 공지사항 : " + sGui.txtMessage.getText() + "\n";
-			if (socket != null) {
-				try {
-					// 연결된 소켓에 데이타 쓰기]
-					//dos.writeUTF(sGui.txtMessage.getText());
-					// 확인용-텍스트에리어에 다시 출력]
-					sendMessage(msg);
-					sGui.appendMsg(msg);
-				} catch (Exception e1) {
-					// ※연결된 소켓에 데이타 쓸때 소켓이 끊어지면
-					// 즉 클라이언트가 나가면 예외발생.
-					sGui.txtHistory.append("연결이 끊어졌어요\r\n");
-				} finally {
-					autoScroll(sGui.txtHistory);
-					// 텍스트 클리어
-					sGui.txtMessage.setText("");
-					// 포커스를 다시 메시지 입력창으로 가져오기
-					sGui.txtMessage.requestFocus();
-
-				}
-			} // if
-		}// actionPerformed
-	};
 
 	public static void autoScroll(JTextArea textArea) {
 		// 텍스트에리어의 모든 텍스트 길이 얻기
@@ -185,6 +184,24 @@ public class ServerBack {
 		textArea.requestFocus();
 	}/////////// autoScroll
 
+	public void unicast(String msg) {
+		
+		Receiver rece = (Receiver) clientMap;
+		key1 = clientMap.keySet();
+		for(Object key : key1) {
+			System.out.println("들어있는 값 key 값 "+key);
+			if(key.equals(receiver)) {
+				recenick = key.toString();
+				try {
+					clientMap.get(recenick).writeUTF(msg);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}//if
+		}//for
+		
+	}//unicast
 	public static void main(String[] args) {
 		ServerBack serverEnd = new ServerBack();
 		serverEnd.ServerSetting();
