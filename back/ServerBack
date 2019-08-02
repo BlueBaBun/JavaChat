@@ -35,7 +35,7 @@ public class ServerBack {
 	private String receiver;
 	
 	private int begin, end;
-	private Set<String> key1;
+	private DataOutputStream key1;
 	private String recenick;
 	// 사용자들의 정보를 저장하는 맵
 	private Map<String, DataOutputStream> clientMap = new HashMap<String, DataOutputStream>();
@@ -71,7 +71,7 @@ public class ServerBack {
 		private DataOutputStream dos;
 		private String nick;
 		private int begin, end;
-		private Set<String> key1;
+		private DataOutputStream key1;
 		private String recenick;
 		
 		public Receiver(Socket socket) {
@@ -93,20 +93,9 @@ public class ServerBack {
 					sGui.txtHistory.append("Receiver run에서 받음 \r\n");
 					msg = dis.readUTF();
 					if (msg.contains("/w")) {
-						whisper = msg;
-						sGui.appendMsg(msg);
-						begin = whisper.indexOf(" ")+1;
-						end = whisper.indexOf(" ",begin);
-						receiver = whisper.substring(begin, end).trim();
-						whisper = whisper.substring(end+1).trim();
-						System.out.println("begin : "+begin);
-						System.out.println("end : "+end);
-						System.out.println("receiver : "+receiver);
-						System.out.println("whisper : "+whisper);
-						key1 = clientMap.keySet();
-						unicast(whisper);
-						
-					}//if 
+						unicast();
+					}
+					
 					else{
 						sendMessage(msg);
 						sGui.appendMsg(msg);
@@ -184,23 +173,25 @@ public class ServerBack {
 		textArea.requestFocus();
 	}/////////// autoScroll
 
-	public void unicast(String msg) {
+	public void unicast() {
 		
-		Receiver rece = (Receiver) clientMap;
-		key1 = clientMap.keySet();
-		for(Object key : key1) {
-			System.out.println("들어있는 값 key 값 "+key);
-			if(key.equals(receiver)) {
-				recenick = key.toString();
-				try {
-					clientMap.get(recenick).writeUTF(msg);
+		whisper = msg;
+		sGui.appendMsg(msg);
+		begin = whisper.indexOf(" ")+1;
+		end = whisper.indexOf(" ",begin);
+		receiver = whisper.substring(begin, end).trim();
+		whisper = whisper.substring(end+1).trim();
+		
+		key1 = clientMap.get(receiver);
+		 if(key1 != null) {
+			 DataOutputStream dos = (DataOutputStream)key1;
+                try {
+					dos.writeUTF("님의 귓속말  : " + msg);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}//if
-		}//for
-		
+		 }
 	}//unicast
 	public static void main(String[] args) {
 		ServerBack serverEnd = new ServerBack();
